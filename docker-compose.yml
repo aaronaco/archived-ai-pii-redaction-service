@@ -1,0 +1,32 @@
+services:
+  # PII Redaction Middleware
+  pii-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - UPSTREAM_API_KEY=${UPSTREAM_API_KEY}
+      - UPSTREAM_URL=${UPSTREAM_URL:-https://api.openai.com/v1}
+      - REDIS_URL=redis://redis:6379
+      - SALT=${SALT:-dev-salt-change-in-production-1234567890}
+      - FAIL_STRATEGY=closed
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Redis for rate limiting and session state
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+volumes:
+  redis-data:
